@@ -1,0 +1,27 @@
+# Virtual environment
+venv/
+.env
+
+# GCP credentials - NEVER commit these
+*credentials*.json
+*service_account*.json
+*.json
+
+# dbt
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/.terraform.lock.hcl
+
+# Mac
+.DS_Store
