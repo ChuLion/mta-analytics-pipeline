@@ -1,11 +1,13 @@
 # Virtual environment
 venv/
+.venv/
+
+# Environment variables - NEVER commit
 .env
 
-# GCP credentials - NEVER commit these
+# GCP credentials - NEVER commit
 *credentials*.json
 *service_account*.json
-*.json
 
 # dbt
 dbt_project/target/
@@ -25,3 +27,7 @@ infra/.terraform.lock.hcl
 
 # Mac
 .DS_Store
+
+# Local data files
+ingestion/.incremental_cursor.json
+ingestion/census_sample.csv
