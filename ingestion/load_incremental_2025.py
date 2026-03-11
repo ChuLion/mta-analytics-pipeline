@@ -1,3 +1,4 @@
+# Dataset: MTA Subway Hourly Ridership: Beginning 2025 (5wq4-mkjj)
 """
 MTA Analytics Pipeline — Incremental Ingestion (2025)
 -------------------------------------------------------
@@ -23,7 +24,7 @@ BUCKET_NAME     = "jdl-mta-project-mta-raw"
 GCS_FOLDER      = "mta_turnstile_incremental"
 CURSOR_FILE     = "ingestion/.incremental_cursor.json"  # tracks last loaded date
 
-BASE_URL        = "https://data.ny.gov/resource/wujg-7c2s.csv"
+BASE_URL        = "https://data.ny.gov/resource/5wq4-mkjj.csv"
 ROWS_PER_PULL   = 100000
 CHUNK_DAYS      = 7       # how many days to load per run — change to 1 for daily
 

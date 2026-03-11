@@ -1,3 +1,6 @@
+# Dataset: MTA Subway Hourly Ridership 2020-2024 (wujg-7c2s)
+# NOTE: 2025+ data moved to new dataset 5wq4-mkjj
+# See load_incremental_2025.py for 2025 ingestion
 """
 MTA Analytics Pipeline — Ingestion Layer
 -----------------------------------------
