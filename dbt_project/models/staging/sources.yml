@@ -1,0 +1,48 @@
+version: 2
+
+sources:
+  - name: mta_bronze
+    database: jdl-mta-project
+    schema: mta_bronze
+    description: "Raw MTA transit data loaded from GCS — Bronze layer"
+
+    tables:
+      - name: mta_ridership_2022_2024
+        description: "MTA hourly ridership by station complex 2022-2024"
+        columns:
+          - name: transit_timestamp
+            description: "Hourly timestamp of ridership reading"
+          - name: station_complex_id
+            description: "Unique station complex identifier"
+          - name: ridership
+            description: "Estimated hourly ridership count"
+
+      - name: mta_turnstile_2019
+        description: "Legacy MTA turnstile cumulative counter readings 2019"
+        columns:
+          - name: date
+            description: "Date of turnstile reading"
+          - name: entries
+            description: "Cumulative entry counter — use LAG() for delta"
+          - name: exits
+            description: "Cumulative exit counter — use LAG() for delta"
+
+      - name: mta_ridership_2025_incremental
+        description: "MTA hourly ridership 2025 — loaded incrementally"
+        columns:
+          - name: transit_timestamp
+            description: "Hourly timestamp of ridership reading"
+          - name: station_complex_id
+            description: "Unique station complex identifier"
+          - name: ridership
+            description: "Estimated hourly ridership count"
+
+      - name: census_nyc_tracts
+        description: "US Census ACS 2023 — NYC census tracts demographics"
+        columns:
+          - name: geoid
+            description: "Census tract GEOID — state+county+tract"
+          - name: median_household_income
+            description: "Median household income — -666666666 = null"
+          - name: borough
+            description: "NYC borough name"

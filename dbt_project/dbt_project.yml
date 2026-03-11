@@ -1,0 +1,39 @@
+name: mta_analytics
+version: '1.0.0'
+config-version: 2
+
+profile: mta_analytics
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+seed-paths: ["seeds"]
+log-path: "logs"
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  mta_analytics:
+    staging:
+      +materialized: view
+      +schema: mta_silver
+    intermediate:
+      +materialized: view
+      +schema: mta_silver
+    marts:
+      +materialized: table
+      +schema: mta_gold
+      +partition_by:
+        field: transit_date
+        data_type: date
+        granularity: month
+      +cluster_by:
+        - station_complex_id
+        - borough
+
+vars:
+  baseline_year: 2019
+  recovery_start_year: 2022
