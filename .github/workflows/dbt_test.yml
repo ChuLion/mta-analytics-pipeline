@@ -1,5 +1,4 @@
 name: dbt Tests
-
 on:
   push:
     branches: [ main ]
@@ -9,27 +8,42 @@ on:
 jobs:
   dbt-test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
       - name: Install dbt
-        run: |
-          pip install dbt-bigquery
+        run: pip install dbt-bigquery
 
       - name: Authenticate to GCP
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Create dbt profile
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << 'EOF'
+          mta_analytics:
+            target: ci
+            outputs:
+              ci:
+                type: bigquery
+                method: oauth
+                project: jdl-mta-project
+                dataset: mta_silver
+                threads: 4
+                timeout_seconds: 300
+                location: US
+          EOF
 
       - name: Run dbt tests
         working-directory: dbt_project
         run: |
           dbt deps
-          dbt test --profiles-dir .
+          dbt test
