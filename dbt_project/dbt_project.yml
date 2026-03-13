@@ -37,3 +37,4 @@ models:
 vars:
   baseline_year: 2019
   recovery_start_year: 2022
+  max_turnstile_entries_per_interval: 5000  # ← data-driven threshold
