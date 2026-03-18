@@ -17,6 +17,17 @@ sources:
           - name: ridership
             description: "Estimated hourly ridership count"
 
+      - name: mta_ridership_2019
+        description: "MTA hourly ridership 2019 baseline — same schema as 2022-2024"
+        columns:
+          - name: transit_timestamp
+            description: "Hourly timestamp of ridership reading"
+          - name: station_complex_id
+            description: "Unique station complex identifier — matches modern dataset"
+          - name: ridership
+            description: "Estimated hourly ridership count"
+
+
       - name: mta_turnstile_2019
         description: "Legacy MTA turnstile cumulative counter readings 2019"
         columns:

@@ -1,19 +1,15 @@
 """
-MTA Analytics Pipeline — 2019 Baseline Ingestion
---------------------------------------------------
-Downloads 2019 MTA turnstile data from data.ny.gov
-dataset xfn5-qji9 and loads raw CSVs to GCS.
+MTA Analytics Pipeline — 2019 Baseline Ingestion (v2)
+-------------------------------------------------------
+Switched from legacy turnstile dataset (xfn5-qji9) to
+hourly ridership dataset (t69i-h2me) — identical schema
+to 2022-2024 dataset (wujg-7c2s).
 
-Schema notes:
-  - Cumulative entry/exit counters per individual turnstile
-  - Ridership calculated in dbt as LAG() delta per turnstile unit
-  - Date in ISO format: 2019-01-01T00:00:00.000
-  - Time separate field: HH:MM:SS
-  - Station name (text) mapped to station_complex_id in dbt
-    intermediate layer to align with modern dataset schema
+Eliminates need for LAG() delta calculation and station
+name mapping. Direct join on station_complex_id.
 
-Author: Jesus M. De Leon
-Project: MTA Analytics Pipeline
+Original turnstile approach preserved in stg_mta_turnstile_2019.sql
+as documented technical exploration.
 """
 
 import requests
@@ -23,10 +19,11 @@ from google.cloud import storage
 # ── Config ────────────────────────────────────────────────────────────────────
 PROJECT_ID      = "jdl-mta-project"
 BUCKET_NAME     = "jdl-mta-project-mta-raw"
-GCS_FOLDER      = "mta_turnstile_2019"
+GCS_FOLDER = "mta_turnstile_2019_hourly"
 
 # Confirmed live endpoint — data.ny.gov dataset xfn5-qji9
-BASE_URL        = "https://data.ny.gov/resource/xfn5-qji9.csv"
+# BASE_URL        = "https://data.ny.gov/resource/xfn5-qji9.csv" <old schema for documentation only now.
+BASE_URL = "https://data.ny.gov/resource/t69i-h2me.csv"
 ROWS_PER_PULL   = 100000
 
 # ── GCS Client ────────────────────────────────────────────────────────────────
@@ -57,10 +54,10 @@ def fetch_2019_baseline(client) -> int:
 
     while True:
         params = {
-            "$where"  : "date >= '2019-01-01T00:00:00' AND date < '2020-01-01T00:00:00'",
+            "$where": "transit_timestamp >= '2019-01-01T00:00:00' AND transit_timestamp < '2020-01-01T00:00:00'",
             "$limit"  : ROWS_PER_PULL,
             "$offset" : offset,
-            "$order"  : "date ASC, unit ASC, scp ASC"
+            "$order": "transit_timestamp ASC"
         }
 
         response = requests.get(BASE_URL, params=params, timeout=60)

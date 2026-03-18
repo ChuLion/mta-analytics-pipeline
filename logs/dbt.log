@@ -30,3 +30,51 @@ Runtime Error
 [0m17:42:51.673424 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1118a0fc0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1118fc170>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1118d87c0>]}
 [0m17:42:51.673545 [debug] [MainThread]: Flushing usage events
 [0m17:42:51.904790 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m23:06:15.755021 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x107a9c980>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1090b3ed0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1090b3d90>]}
+
+
+============================== 23:06:15.757822 | ca673b41-cfcc-4810-830f-ba2dee46067b ==============================
+[0m23:06:15.757822 [info ] [MainThread]: Running with dbt=1.11.7
+[0m23:06:15.758066 [debug] [MainThread]: running dbt with arguments {'use_colors': 'True', 'profiles_dir': '/Volumes/JDL Personal/jesusdeleonmini/.dbt', 'target_path': 'None', 'invocation_command': 'dbt run --select stg_mta_ridership_2019', 'send_anonymous_usage_stats': 'True', 'indirect_selection': 'eager', 'warn_error': 'None', 'version_check': 'True', 'printer_width': '80', 'static_parser': 'True', 'partial_parse': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'fail_fast': 'False', 'cache_selected_only': 'False', 'introspect': 'True', 'empty': 'False', 'debug': 'False', 'write_json': 'True', 'no_print': 'None', 'log_format': 'default', 'log_path': 'logs', 'log_cache_events': 'False', 'use_experimental_parser': 'False', 'quiet': 'False'}
+[0m23:06:15.758294 [error] [MainThread]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path /Volumes/JDL Personal/jesusdeleonmini/projects/mta-analytics-pipeline/dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m23:06:15.759902 [debug] [MainThread]: Resource report: {"command_name": "run", "command_success": false, "command_wall_clock_time": 0.03860821, "process_in_blocks": "0", "process_kernel_time": 0.129732, "process_mem_max_rss": "122109952", "process_out_blocks": "0", "process_user_time": 0.491239}
+[0m23:06:15.760082 [debug] [MainThread]: Command `dbt run` failed at 23:06:15.760043 after 0.04 seconds
+[0m23:06:15.760202 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x109110fc0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x109168170>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1091487c0>]}
+[0m23:06:15.760325 [debug] [MainThread]: Flushing usage events
+[0m23:06:16.020062 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m15:22:26.545694 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x107ed8980>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1094efed0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1094efd90>]}
+
+
+============================== 15:22:26.548341 | c5f24096-6260-4a84-af38-8e5ff19346df ==============================
+[0m15:22:26.548341 [info ] [MainThread]: Running with dbt=1.11.7
+[0m15:22:26.548588 [debug] [MainThread]: running dbt with arguments {'quiet': 'False', 'empty': 'False', 'introspect': 'True', 'indirect_selection': 'eager', 'cache_selected_only': 'False', 'no_print': 'None', 'fail_fast': 'False', 'partial_parse': 'True', 'log_path': 'logs', 'log_format': 'default', 'warn_error': 'None', 'send_anonymous_usage_stats': 'True', 'printer_width': '80', 'write_json': 'True', 'target_path': 'None', 'use_experimental_parser': 'False', 'version_check': 'True', 'use_colors': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'debug': 'False', 'invocation_command': 'dbt run --select int_station_recovery', 'profiles_dir': '/Volumes/JDL Personal/jesusdeleonmini/.dbt', 'log_cache_events': 'False', 'static_parser': 'True'}
+[0m15:22:26.548812 [error] [MainThread]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path /Volumes/JDL Personal/jesusdeleonmini/projects/mta-analytics-pipeline/dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m15:22:26.553773 [debug] [MainThread]: Resource report: {"command_name": "run", "command_success": false, "command_wall_clock_time": 0.038695376, "process_in_blocks": "0", "process_kernel_time": 0.146067, "process_mem_max_rss": "119046144", "process_out_blocks": "0", "process_user_time": 0.487512}
+[0m15:22:26.553960 [debug] [MainThread]: Command `dbt run` failed at 15:22:26.553922 after 0.04 seconds
+[0m15:22:26.554139 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10954cfc0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1095a8170>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1095847c0>]}
+[0m15:22:26.554293 [debug] [MainThread]: Flushing usage events
+[0m15:22:26.801329 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m07:46:03.545838 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1043c0980>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1059d7ed0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1059d7d90>]}
+
+
+============================== 07:46:03.548685 | 466f24d8-ebca-40ee-8d2b-d429911ddbfd ==============================
+[0m07:46:03.548685 [info ] [MainThread]: Running with dbt=1.11.7
+[0m07:46:03.548926 [debug] [MainThread]: running dbt with arguments {'log_cache_events': 'False', 'send_anonymous_usage_stats': 'True', 'log_format': 'default', 'warn_error': 'None', 'quiet': 'False', 'profiles_dir': '/Volumes/JDL Personal/jesusdeleonmini/.dbt', 'empty': 'False', 'printer_width': '80', 'target_path': 'None', 'partial_parse': 'True', 'static_parser': 'True', 'no_print': 'None', 'invocation_command': 'dbt run --select int_station_recovery', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'use_experimental_parser': 'False', 'debug': 'False', 'introspect': 'True', 'write_json': 'True', 'fail_fast': 'False', 'indirect_selection': 'eager', 'use_colors': 'True', 'log_path': 'logs', 'cache_selected_only': 'False', 'version_check': 'True'}
+[0m07:46:03.549327 [error] [MainThread]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path /Volumes/JDL Personal/jesusdeleonmini/projects/mta-analytics-pipeline/dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m07:46:03.553841 [debug] [MainThread]: Resource report: {"command_name": "run", "command_success": false, "command_wall_clock_time": 0.044248585, "process_in_blocks": "0", "process_kernel_time": 0.15629, "process_mem_max_rss": "118325248", "process_out_blocks": "0", "process_user_time": 0.518529}
+[0m07:46:03.554095 [debug] [MainThread]: Command `dbt run` failed at 07:46:03.554054 after 0.04 seconds
+[0m07:46:03.554234 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x105a34fc0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x105a90170>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x105a6c7c0>]}
+[0m07:46:03.554355 [debug] [MainThread]: Flushing usage events
+[0m07:46:03.740705 [debug] [MainThread]: An error was encountered while trying to flush usage events
