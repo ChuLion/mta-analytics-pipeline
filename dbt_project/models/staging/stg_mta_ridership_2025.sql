@@ -6,7 +6,7 @@
 -- stg_mta_ridership_2025.sql
 {{ config(
     materialized = 'incremental',
-    unique_key = 'surrogate_key',
+    unique_key = ['transit_timestamp', 'station_complex_id', 'fare_class'],
     on_schema_change = 'sync_all_columns'
 ) }}
 with source as (

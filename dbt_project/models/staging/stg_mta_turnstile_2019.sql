@@ -4,7 +4,10 @@
 -- Performs: column renaming, type casting, basic cleaning,
 --           and converts cumulative entries into per-interval ridership
 -- Target: mta_silver dataset
-
+{{ config(
+    enabled=false,
+    tags=['deprecated']
+) }}
 with source as (
     select * from {{ source('mta_bronze', 'mta_turnstile_2019') }}
 ),

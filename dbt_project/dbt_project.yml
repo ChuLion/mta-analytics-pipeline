@@ -20,12 +20,15 @@ models:
     staging:
       +materialized: view
       +schema: mta_silver
+      +tags: ['staging']
     intermediate:
       +materialized: view
       +schema: mta_silver
+      +tags: ['intermediate']
     marts:
       +materialized: table
       +schema: mta_gold
+      +tags: ['marts']
       +partition_by:
         field: transit_date
         data_type: date
