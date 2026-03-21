@@ -79,7 +79,7 @@ select
         when avg_congestion_index >= 15.0 then 'High Congestion'
         when avg_congestion_index >= 8.0  then 'Moderate'
         when avg_congestion_index >= 2.0  then 'Baseline'
-        else                                  'Low/Off-Peak'
+        else                                  'Off Peak'
     end as congestion_intensity_tier,
 
     -- Classification 2: Stress (Relative to 2019 physical limit)

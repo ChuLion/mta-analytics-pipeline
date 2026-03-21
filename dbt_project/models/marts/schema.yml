@@ -1,0 +1,226 @@
+version: 2
+
+models:
+  - name: mart_recovery_scorecard
+    description: >
+      Annual ridership recovery vs 2019 baseline per station and borough.
+      Grain: station × year UNION borough × year (~1,305 rows total).
+      record_type distinguishes station rows from borough summary rows.
+      Borough rows aggregate clean stations only.
+      Math: sum(monthly_ridership) / sum(baseline_monthly_2019) — NOT avg of averages.
+      See ADR 002 for station ID reorganization context.
+      Tableau View: View 1 — Recovery Scorecard.
+    columns:
+      - name: record_type
+        description: "'station' or 'borough' — use to filter Tableau views"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['station', 'borough']
+      - name: transit_year
+        description: "Year (2022, 2023, 2024)"
+        tests:
+          - not_null
+      - name: borough
+        description: "NYC borough"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island']
+      - name: recovery_pct
+        description: >
+          annual_ridership / annual_baseline_2019 × 100.
+          Calculated as sum of monthly totals / sum of monthly baselines.
+          NOT an average of monthly recovery percentages.
+      - name: recovery_tier
+        description: "Recovered (>=90%) / Recovering (70-89%) / Lagging (50-69%) / Critical (<50%) / N/A"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Recovered', 'Recovering', 'Lagging', 'Critical', 'N/A']
+      - name: data_quality_flag
+        description: >
+          clean / suspect_merged / suspect_split / no_baseline.
+          Filter to 'clean' for executive dashboards.
+        tests:
+          - not_null
+      - name: borough_avg_recovery_pct
+        description: "Average recovery_pct for the borough over clean stations only"
+      - name: pct_vs_borough_avg
+        description: "recovery_pct minus borough_avg_recovery_pct. Positive = above borough average."
+
+  - name: mart_congestion_trigger
+    description: >
+      Station congestion patterns aggregated to time_period × day_of_week grain.
+      Grain: station × time_period × day_of_week × ridership_year × season (~180K rows).
+      Reduces 13M daily rows to 180K for Tableau performance.
+      Congestion intensity thresholds derived from actual data distribution.
+      Tableau View: View 2 — Congestion Heat Map.
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+      - name: ridership_year
+        description: "Year (2022, 2023, 2024)"
+        tests:
+          - not_null
+      - name: time_period
+        description: "Peak Hour / Near Peak / AM Off Peak / PM Off Peak / Overnight"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Peak Hour', 'Near Peak', 'AM Off Peak', 'PM Off Peak', 'Overnight']
+      - name: avg_hourly_ridership
+        description: "Average hourly ridership for this station-period-dow-year-season bucket"
+        tests:
+          - not_null
+      - name: median_hourly_ridership
+        description: >
+          Median via approx_quantiles(ridership, 2)[offset(1)].
+          Efficient approximation — use as outlier-resistant toggle with avg in Tableau.
+      - name: avg_congestion_index
+        description: >
+          Average station_congestion_index for this bucket.
+          Primary axis for efficiency_quadrant in mart_efficiency_matrix.
+      - name: congestion_intensity_tier
+        description: >
+          High Congestion (>=15.0) / Moderate (>=8.0) / Baseline (>=2.0) / Off Peak (<2.0).
+          NOTE: NULL values exist for rows where avg_congestion_index is NULL
+          (stations with no system benchmark data). These are expected and excluded
+          from the accepted_values test via config.
+        tests:
+          - not_null:
+              config:
+                severity: warn
+          - accepted_values:
+              arguments:
+                values: ['High Congestion', 'Moderate', 'Baseline', 'Off Peak']
+              config:
+                where: "congestion_intensity_tier is not null"
+      - name: most_common_peak_hour
+        description: >
+          Most frequent actual peak hour within this bucket.
+          NULL when no peak hours fall in this bucket (e.g., Overnight rows).
+
+  - name: mart_efficiency_matrix
+    description: >
+      Station efficiency classification combining congestion with recovery context.
+      Grain: station × time_period × day_of_week × transit_year × season (~180K rows).
+      Efficiency quadrant uses avg_congestion_index NOT capacity-based throughput stress.
+      Capacity proxy approach rejected — produced misleading values (>5x). See ADR 003.
+      Tableau View: View 3 — Efficiency Matrix scatter plot.
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+      - name: transit_year
+        description: "Year — aliased from ridership_year"
+        tests:
+          - not_null
+      - name: avg_congestion_index
+        description: "Primary axis for efficiency quadrant. Threshold >= 8.0 = meaningfully congested."
+        tests:
+          - not_null
+      - name: recovery_pct
+        description: "Annual recovery vs 2019 — joined from mart_recovery_scorecard"
+      - name: recovery_dq_flag
+        description: "Data quality flag aliased to avoid column collision. Filter to 'clean' for analysis."
+      - name: efficiency_quadrant
+        description: >
+          Thriving but Strained: congestion_index >= 8.0 AND recovery >= 70%.
+          Structural Bottleneck: congestion_index >= 8.0 AND recovery < 70%.
+          Healthy Spare Capacity: congestion_index < 8.0 AND recovery >= 70%.
+          Underutilized: congestion_index < 8.0 AND recovery < 70%.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Thriving but Strained', 'Structural Bottleneck',
+                         'Healthy Spare Capacity', 'Underutilized']
+      - name: congestion_tier
+        description: "Display alias — High Congestion / Moderate / Baseline / Off Peak"
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['High Congestion', 'Moderate', 'Baseline', 'Off Peak']
+              config:
+                where: "congestion_tier is not null"
+
+  - name: mart_equity_view
+    description: >
+      Service Justice Dashboard — the Triple Threat model.
+      Grain: station × year (~1,200 rows — clean stations only).
+      WHO is affected: Census demographics.
+      HOW MUCH they need it: Demand intensity.
+      ARE WE FAILING THEM: Disruption rate normalized by activity.
+      Only clean stations included — suspect IDs excluded for score integrity.
+      Tableau View: View 5 — Service Justice Dashboard.
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+      - name: transit_year
+        description: "Year (2022, 2023, 2024)"
+        tests:
+          - not_null
+      - name: recovery_pct
+        description: "Annual recovery vs 2019 baseline"
+      - name: recovery_tier
+        description: >
+          Recovered/Recovering/Lagging/Critical.
+          NOTE: Column removed from final mart_equity_view SELECT in current implementation.
+          recovery_pct is available for tier derivation in Tableau if needed.
+      - name: avg_demand_intensity
+        description: >
+          Average riders per active hour (daily_ridership / active_hours).
+          High intensity = community heavily relies on this station when it runs.
+      - name: disruption_rate_per_1k_hours
+        description: >
+          Disruption hours per 1,000 active hours.
+          Normalized metric — prevents large busy stations from dominating.
+          Component 2 of equity_risk_score (max 33 points at 10+ disruptions/1k hrs).
+        tests:
+          - not_null
+      - name: weighted_mean_income
+        description: >
+          Area-weighted mean household income for 800m catchment.
+          Component 3 of equity_risk_score.
+      - name: income_tier
+        description: "Low / Middle / Upper Middle / High Income"
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Low Income', 'Middle Income', 'Upper Middle Income', 'High Income']
+              config:
+                where: "income_tier is not null"
+      - name: equity_risk_score
+        description: >
+          Composite score 0-100. Three components:
+          Component 1 (33 pts): Recovery gap vs borough avg. 20+ point lag = max.
+          Component 2 (33 pts): Disruption rate. 10+ per 1k active hours = max.
+          Component 3 (34 pts): Income vulnerability. Below $40K to below $20K = max.
+          NULL for 2 stations where weighted_mean_income is NULL (no census data).
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: equity_risk_tier
+        description: >
+          High Risk (>=60) / Moderate Risk (35-59) / Low Risk (<35).
+          2024: 19 High Risk stations. Income gap High vs Low: $60K+. Disruption gap: 5x.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['High Risk', 'Moderate Risk', 'Low Risk']
+      - name: recovery_dq_flag
+        description: >
+          Aliased from data_quality_flag to avoid join collision.
+          All rows are 'clean' — filtered at model level.

@@ -1,0 +1,212 @@
+version: 2
+
+models:
+  - name: int_station_recovery
+    description: >
+      Monthly ridership recovery per station vs 2019 baseline.
+      Grain: station × year-month.
+      Joins stg_mta_ridership (2022-2024) with stg_mta_ridership_2019 on station_complex_id.
+      Includes data_quality_flag to identify stations affected by MTA station ID
+      reorganization between 2019 and 2022 datasets. See ADR 002.
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+      - name: ridership_month_date
+        description: "First day of month — used as date axis in Tableau"
+        tests:
+          - not_null
+      - name: monthly_ridership
+        description: "Total ridership for this station-month"
+        tests:
+          - not_null
+      - name: baseline_monthly_2019
+        description: "2019 ridership for the same calendar month"
+      - name: monthly_recovery_pct
+        description: "monthly_ridership / baseline_monthly_2019 × 100"
+      - name: recovery_tier
+        description: "Recovered (>=90%) / Recovering (70-89%) / Lagging (50-69%) / Critical (<50%)"
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Recovered', 'Recovering', 'Lagging', 'Critical']
+      - name: data_quality_flag
+        description: >
+          clean: passes boundary checks.
+          suspect_merged: recovery_pct > 200 — 2019 baseline too low, likely station merge.
+          suspect_split: recovery_pct < 25 — 2019 baseline too high, likely station split.
+          no_baseline: no 2019 data for this station.
+          See ADR 002 for full context on MTA station ID reorganization.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['clean', 'suspect_merged', 'suspect_split', 'no_baseline']
+      - name: season
+        description: "Winter/Spring/Summer/Fall derived from transit_month"
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Winter', 'Spring', 'Summer', 'Fall']
+
+  - name: int_station_congestion
+    description: >
+      Hourly congestion patterns per station.
+      Grain: station × date × hour.
+      Fare classes consolidated via SUM before window functions are applied.
+      Includes two congestion indices: station-relative and system-relative.
+      hour_classification uses data-driven peak detection (daily rank) rather
+      than hardcoded time windows.
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+      - name: transit_date
+        description: "Date of reading"
+        tests:
+          - not_null
+      - name: transit_hour
+        description: "Hour of day (0-23)"
+        tests:
+          - not_null
+      - name: hourly_ridership
+        description: "Total ridership this hour — fare classes consolidated via SUM"
+        tests:
+          - not_null
+      - name: station_congestion_index
+        description: >
+          hourly_ridership / (daily_ridership / hours_reported).
+          Ratio of this hour's ridership to the station's average hourly ridership that day.
+          Index of 4.0 = this hour is 4x busier than the station's typical hour.
+      - name: system_contribution_index
+        description: >
+          hourly_ridership / (system_total_ridership / active_stations).
+          Compares this station's hour against what the average station does at the same hour.
+      - name: hour_classification
+        description: >
+          Data-driven classification using daily peak rank.
+          Peak Hour: rank=1 (highest ridership hour that day for this station).
+          Near Peak: rank 2-3.
+          AM Off Peak: hours 5-12, not peak.
+          PM Off Peak: hours 13-20, not peak.
+          Overnight: hours 21-23 and 0-4.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Peak Hour', 'Near Peak', 'AM Off Peak', 'PM Off Peak', 'Overnight']
+      - name: data_quality_flag
+        description: "clean / suspect_high (hourly_ridership > 50,000 threshold)"
+        tests:
+          - not_null
+
+  - name: int_station_utilization
+    description: >
+      Daily station utilization and service anomaly detection.
+      Grain: station × date.
+      Uses CROSS JOIN GENERATE_ARRAY(0,23) to create a complete 24-hour spine.
+      MTA source data is sparse event data — only rows where ridership > 0 are published.
+      Missing hours are absent entirely (not zeroed). The spine converts implicit gaps
+      into explicit zeros enabling meaningful consecutive zero detection.
+      See ADR 004 for full technical explanation.
+      Three-layer anomaly detection:
+        Layer 1 — Consecutive zero detection (rolling 3-hour window).
+        Layer 2 — Historical baseline comparison (station × hour profile).
+        Layer 3 — Time-of-day context (overnight zeros are expected).
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+      - name: transit_date
+        description: "Date"
+        tests:
+          - not_null
+      - name: active_hours
+        description: "Hours with ridership > 0 out of 24"
+        tests:
+          - not_null
+      - name: utilization_rate
+        description: "active_hours / 24 — proportion of day with active service"
+        tests:
+          - not_null
+      - name: demand_intensity
+        description: >
+          daily_ridership / active_hours.
+          Riders per active hour — measures how intensely the station is used
+          when it IS active. High intensity + low utilization = possible underservice.
+      - name: disruption_hours
+        description: >
+          Hours classified as Possible Disruption:
+          ridership = 0, historical_avg > 50, and consecutive_zeros >= 2.
+          Proxy for service gaps — not ground truth (no GTFS schedule data available).
+      - name: season
+        description: "Winter/Spring/Summer/Fall"
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Winter', 'Spring', 'Summer', 'Fall']
+
+  - name: int_station_census_join
+    description: >
+      Station-level weighted demographic profile using 800-meter catchment area.
+      Grain: one row per station complex (no year dimension — demographics are static).
+      Methodology: Any census tract intersecting the 800m walkshed is included,
+      weighted by proportion of buffer area covered.
+      ST_UNION_AGG merges all entrance buffers for multi-entrance stations.
+      See ADR 005 for full spatial methodology documentation.
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+          - unique
+      - name: weighted_mean_income
+        description: >
+          Area-weighted mean household income for 800m catchment.
+          NOTE: This is a weighted MEAN not weighted median.
+          NULL where all intersecting tracts have suppressed income data.
+      - name: weighted_poverty_rate
+        description: "Area-weighted poverty rate for 800m catchment"
+      - name: tracts_in_catchment
+        description: "Number of census tracts intersecting the 800m buffer"
+        tests:
+          - not_null
+      - name: income_tier
+        description: "Low (<$40K) / Middle ($40-75K) / Upper Middle ($75-120K) / High (>$120K)"
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Low Income', 'Middle Income', 'Upper Middle Income', 'High Income']
+
+  - name: int_station_capacity
+    description: >
+      2019 capacity benchmarks per station per time period.
+      Grain: station × time_bucket (AM/PM/Late Night).
+      p95 calculated within each time bucket — NOT across all hours.
+      Period-matched calculation prevents all-hour p95 from being deflated
+      by overnight hours. See ADR 003.
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+      - name: time_bucket
+        description: "AM (hours 5-12) / PM (hours 13-20) / Late Night (hours 21-23, 0-4)"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['AM', 'PM', 'Late Night']
+      - name: p95_capacity_proxy
+        description: >
+          95th percentile hourly ridership in 2019 for this station-time_bucket.
+          Practical capacity ceiling excluding outlier events (NYE, concerts).
+        tests:
+          - not_null
+      - name: max_2019_ridership
+        description: "Maximum hourly ridership recorded in 2019 for this time period"
+        tests:
+          - not_null
