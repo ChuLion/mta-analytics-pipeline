@@ -1,0 +1,102 @@
+version: 2
+
+sources:
+  - name: mta_bronze
+    database: jdl-mta-project
+    schema: mta_bronze
+    description: "Raw ingested MTA and Census data — bronze layer"
+    tables:
+      - name: mta_ridership_2022_2024
+        description: "MTA hourly ridership 2022-2024 (wujg-7c2s)"
+      - name: mta_ridership_2019
+        description: "MTA hourly ridership 2019 baseline (t69i-h2me) — see ADR 001"
+      - name: mta_ridership_2025_incremental
+        description: "MTA hourly ridership 2025 incremental (5wq4-mkjj)"
+      - name: census_nyc_tracts
+        description: "Census ACS 2023 5-year estimates — 2,327 NYC tracts"
+
+models:
+  - name: stg_mta_ridership
+    description: >
+      Staging model for MTA hourly ridership 2022-2024.
+      Cleans column names, casts types, filters nulls and negative ridership.
+      Consolidates multiple fare class rows per station-hour in downstream models.
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+      - name: transit_timestamp
+        description: "Hourly timestamp of ridership reading"
+        tests:
+          - not_null
+      - name: ridership
+        description: "Estimated hourly ridership — filtered to >= 0"
+        tests:
+          - not_null
+      - name: borough
+        description: "NYC borough (initcap cleaned)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island']
+
+  - name: stg_mta_ridership_2019
+    description: >
+      Staging model for MTA hourly ridership 2019 baseline.
+      Identical schema to stg_mta_ridership — enables direct join on station_complex_id.
+      Switched from legacy turnstile dataset — see ADR 001.
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+      - name: transit_timestamp
+        description: "Hourly timestamp of ridership reading"
+        tests:
+          - not_null
+      - name: ridership
+        description: "Estimated hourly ridership — filtered to >= 0"
+        tests:
+          - not_null
+
+  - name: stg_mta_ridership_2025
+    description: >
+      Staging model for MTA hourly ridership 2025 incremental.
+      Incremental model — appends only new rows weekly via MAX(transit_timestamp) watermark.
+      MTA split 2025 data to new endpoint (5wq4-mkjj) — discovered during build.
+    columns:
+      - name: station_complex_id
+        description: "Unique station complex identifier"
+        tests:
+          - not_null
+      - name: transit_timestamp
+        description: "Hourly timestamp of ridership reading"
+        tests:
+          - not_null
+      - name: ridership
+        description: "Estimated hourly ridership"
+        tests:
+          - not_null
+
+  - name: stg_census_income
+    description: >
+      Staging model for Census ACS 2023 demographic data.
+      Sentinel value -666666666 replaced with NULL via NULLIF() for median_household_income.
+      Covers all 2,327 NYC census tracts across 5 boroughs.
+    columns:
+      - name: geoid
+        description: "Census tract GEOID — matches BigQuery public geo_census_tracts"
+        tests:
+          - not_null
+          - unique
+      - name: median_household_income
+        description: >
+          Median household income. NULL where Census sentinel -666666666
+          indicates suppressed data (low population tracts).
+      - name: poverty_rate
+        description: "Population in poverty / total population"
+      - name: borough
+        description: "NYC borough"
+        tests:
+          - not_null
