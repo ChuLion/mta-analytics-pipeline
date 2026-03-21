@@ -70,10 +70,11 @@ census tract, I implemented an 800-meter catchment area using BigQuery's native
 geospatial functions. 800 meters is the NYC pedestrian planning standard for
 a 10-minute walk.
 
-Any census tract intersecting the station's walkshed is included, weighted by
-the proportion of the buffer area it covers. If 35% of a tract falls within the
-buffer, it contributes 35% weight to the station's demographic profile. This is
-standard urban planning methodology — what MTA uses in their own equity reports.
+Area-Weighted Interpolation was used. Any census tract intersecting the station's
+walkshed is included, weighted by the proportion of the buffer area it covers. If
+35% of a tract falls within the buffer, it contributes 35% weight to the station's
+demographic profile. This is standard urban planning methodology — what MTA uses 
+in their own equity reports.
 
 I also discovered stations have multiple physical entrances with different
 coordinates. I used ST_UNION_AGG to merge all entrance buffers into a single
@@ -98,7 +99,9 @@ clearly wrong. The root cause was assuming zeros would appear explicitly.
 
 The fix was generating a complete 24-hour spine via CROSS JOIN with
 GENERATE_ARRAY(0,23), then LEFT JOINing actual ridership onto it. This
-converts implicit gaps into explicit zeros.
+converts implicit gaps into explicit zeros. Without the spine, the
+AVG() and SUM() calculations were biased because they were only averaging
+"active" hours. By "zero-filling" the gaps, a true temporal baseline was created.
 
 Then I applied three-layer classification:
   Layer 1: Consecutive zero detection — rolling 3-hour window. Two or
