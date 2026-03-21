@@ -160,8 +160,9 @@ you can always aggregate up, you can never disaggregate down."
   1. GTFS crosswalk for station ID reconciliation — critical for data accuracy
   2. Airflow or Dagster for orchestration instead of cron — better visibility,
      retry logic, alerting
-  3. dbt tests on every model — I have the framework but need comprehensive
-     coverage: not_null, unique, accepted_values, custom assertions
+  3. I'd move from generic tests to Data Contracts. Ensuring that the Python 
+     ingestion layer explicitly enforces a schema before it even hits BigQuery 
+     Bronze would prevent upstream 'schema drift' from breaking the dbt models.
   4. Elementary or re_data for data observability — anomaly detection on the
      pipeline itself, not just the data
   5. Per-station throughput thresholds instead of global — a data-driven
@@ -207,6 +208,15 @@ levels for this time of day' — immediately interpretable without explanation.
 
 This is a subtle but important methodological decision. The kind that separates
 analysis that builds trust from analysis that raises questions in board meetings."
+
+---
+
+## Q11: How did your experience at Verizon influence this project?
+
+At Verizon, I learned that a dashboard is useless if the underlying data isn't 
+reliable. That’s why I prioritized Architecture Decision Records (ADRs) and a 
+Medallion Architecture. I treated this pipeline not as a 'report,' but as a 
+production asset that needs to be maintainable by a team, not just a single person.
 
 ---
 
