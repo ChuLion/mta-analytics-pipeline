@@ -1,50 +1,42 @@
 -- mart_efficiency_matrix.sql
--- Gold Layer: Station Efficiency & Stress Matrix (View 3)
+-- Gold Layer: Station Efficiency Matrix (View 3)
 -- Grain: station × year × season × day_of_week × time_period
--- Joins congestion patterns with recovery context and capacity proxy
+-- Joins congestion patterns with recovery context
 -- Key output: efficiency_quadrant for scatter plot color coding
--- Grain: station × year × season × day_of_week × time_period
+--
+-- NOTE: Throughput stress index removed — capacity proxy produced
+-- misleading values (>1.0) due to grain mismatch between
+-- aggregated time_period buckets and hourly capacity baseline.
+-- See ADR 003 for full technical explanation.
+--
+-- Efficiency quadrant uses avg_congestion_index >= 8.0 as the
+-- "high congestion" threshold — internally consistent, no
+-- external capacity data required. Threshold derived from
+-- actual data distribution (see int_station_congestion sanity check).
 
 {{ config(
     materialized='table',
     cluster_by=["borough", "transit_year", "efficiency_quadrant"]
 ) }}
 
-with congestion_mapped as (
-    -- Step 1: Map granular congestion time periods to the 3-bucket capacity system
+with congestion as (
     select
         *,
-        ridership_year as transit_year,
-        case
-            when time_period in ('Peak Hour', 'Near Peak', 'AM Off Peak') then 'AM'
-            when time_period = 'PM Off Peak' then 'PM'
-            else 'Late Night'
-        end as capacity_time_bucket
+        ridership_year                              as transit_year
     from {{ ref('mart_congestion_trigger') }}
 ),
 
 recovery as (
-    -- Step 2: Get annual recovery context per station
-    select 
-        station_complex_id, 
-        transit_year, 
-        recovery_pct, 
+    select
+        station_complex_id,
+        transit_year,
+        recovery_pct,
         data_quality_flag
     from {{ ref('mart_recovery_scorecard') }}
     where record_type = 'station'
-),
-
-capacity as (
-    -- Step 3: Get 2019 period-matched capacity baselines
-    select 
-        station_complex_id, 
-        time_bucket, 
-        p95_capacity_proxy 
-    from {{ ref('int_station_capacity') }}
 )
 
 select
-    -- Dimensions
     c.station_complex_id,
     c.station_name,
     c.borough,
@@ -54,44 +46,52 @@ select
     c.time_period,
     c.latitude,
     c.longitude,
-    
-    -- Base Metrics
+
+    -- Volume metrics
     c.avg_hourly_ridership,
-    cap.p95_capacity_proxy,
+    c.median_hourly_ridership,
+    c.observation_count,
+
+    -- Congestion metrics (internally consistent, no external capacity needed)
+    c.avg_congestion_index,
+    -- REMOVED:c.avg_system_index,
+    c.congestion_intensity_tier,
+    c.most_common_peak_hour,
+
+    -- Recovery context
     r.recovery_pct,
-    
-    -- Calculated Index: Throughput Stress
-    round(
-        safe_divide(c.avg_hourly_ridership, cap.p95_capacity_proxy), 
-    3) as throughput_stress_index,
+    r.data_quality_flag                             as recovery_dq_flag,
 
-    -- Categorical Dimension 1: Stress Tier
-    case 
-        when safe_divide(c.avg_hourly_ridership, cap.p95_capacity_proxy) >= 0.90 then 'At Capacity'
-        when safe_divide(c.avg_hourly_ridership, cap.p95_capacity_proxy) >= 0.70 then 'High Stress'
-        when safe_divide(c.avg_hourly_ridership, cap.p95_capacity_proxy) >= 0.50 then 'Moderate Stress'
-        else 'Low Stress'
-    end as stress_tier,
+    -- Efficiency quadrant
+    -- Combines congestion intensity with recovery trajectory
+    -- Threshold: avg_congestion_index >= 8.0 = Moderate or higher
+    -- Threshold: recovery_pct >= 70 = Recovering or better
+    case
+        when c.avg_congestion_index >= 8.0
+         and r.recovery_pct >= 70
+            then 'Thriving but Strained'
+        when c.avg_congestion_index >= 8.0
+         and r.recovery_pct < 70
+            then 'Structural Bottleneck'
+        when c.avg_congestion_index < 8.0
+         and r.recovery_pct >= 70
+            then 'Healthy Spare Capacity'
+        else
+            'Underutilized'
+    end                                             as efficiency_quadrant,
 
-    -- Categorical Dimension 2: Efficiency Quadrant (The View 3 Hero Metric)
-    case 
-        when safe_divide(c.avg_hourly_ridership, cap.p95_capacity_proxy) >= 0.70 
-             and r.recovery_pct >= 70 then 'Thriving but Strained'
-        when safe_divide(c.avg_hourly_ridership, cap.p95_capacity_proxy) >= 0.70 
-             and r.recovery_pct < 70  then 'Structural Bottleneck'
-        when safe_divide(c.avg_hourly_ridership, cap.p95_capacity_proxy) < 0.70 
-             and r.recovery_pct >= 70 then 'Healthy Spare Capacity'
-        else                               'Underutilized'
-    end as efficiency_quadrant,
+    -- Congestion intensity as the stress signal
+    -- Clean, internally consistent, no capacity proxy needed
+    case
+        when c.avg_congestion_index >= 15.0 then 'High Congestion'
+        when c.avg_congestion_index >= 8.0  then 'Moderate'
+        when c.avg_congestion_index >= 2.0  then 'Baseline'
+        else                                     'Off Peak'
+    end                                             as congestion_tier,
 
-    -- Metadata & Quality
-    r.data_quality_flag as recovery_dq_flag,
-    current_timestamp() as dbt_loaded_at
+    current_timestamp()                             as dbt_loaded_at
 
-from congestion_mapped c
-left join recovery r 
-    on c.station_complex_id = r.station_complex_id 
-    and c.transit_year = r.transit_year
-left join capacity cap 
-    on c.station_complex_id = cap.station_complex_id
-    and c.capacity_time_bucket = cap.time_bucket
+from congestion c
+left join recovery r
+    on c.station_complex_id = r.station_complex_id
+    and c.transit_year      = r.transit_year
