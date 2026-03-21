@@ -7,7 +7,7 @@ Accepted
 2026-03-13
 
 ## Context
-The equity analysis (View 5) requires associating demographic data
+The equity analysis (View 4) requires associating demographic data
 from Census ACS with MTA station locations. The naive approach is a
 point-in-polygon join: find which census tract contains the station
 entrance point and assign that tract's demographics to the station.

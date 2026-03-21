@@ -331,7 +331,7 @@ Moderate congestion boundary derived from the actual data distribution
 ### mart_equity_view
 Source: mart_recovery_scorecard, int_station_utilization, int_station_census_join
 Grain: station × year
-Tableau View: View 5 — Service Justice Dashboard
+Tableau View: View 4 — Service Justice Dashboard
 
 The "Triple Threat" model answering three questions:
 1. WHO is affected? — Census demographics (income, poverty, disability)
