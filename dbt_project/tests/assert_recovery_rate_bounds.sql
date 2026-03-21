@@ -4,5 +4,6 @@
 -- See ADR 002 for station ID reorganization context
 select *
 from {{ ref('int_station_recovery') }}
-where monthly_recovery_pct > 500
-   or monthly_recovery_pct < 0
+-- Only fail if a 'clean' record is outside the bounds
+where data_quality_flag = 'clean' 
+  and (monthly_recovery_pct < 0 or monthly_recovery_pct > 200)

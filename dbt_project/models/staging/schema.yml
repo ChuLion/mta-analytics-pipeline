@@ -1,20 +1,5 @@
 version: 2
 
-sources:
-  - name: mta_bronze
-    database: jdl-mta-project
-    schema: mta_bronze
-    description: "Raw ingested MTA and Census data — bronze layer"
-    tables:
-      - name: mta_ridership_2022_2024
-        description: "MTA hourly ridership 2022-2024 (wujg-7c2s)"
-      - name: mta_ridership_2019
-        description: "MTA hourly ridership 2019 baseline (t69i-h2me) — see ADR 001"
-      - name: mta_ridership_2025_incremental
-        description: "MTA hourly ridership 2025 incremental (5wq4-mkjj)"
-      - name: census_nyc_tracts
-        description: "Census ACS 2023 5-year estimates — 2,327 NYC tracts"
-
 models:
   - name: stg_mta_ridership
     description: >
@@ -39,7 +24,10 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island']
+              arguments:
+                values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island']
+      - name: transit_year
+        description: "Year extracted from timestamp"
 
   - name: stg_mta_ridership_2019
     description: >
