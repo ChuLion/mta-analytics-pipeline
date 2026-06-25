@@ -42,9 +42,9 @@ mart_recovery_scorecard identifies suspect stations:
 - no_baseline: station has no 2019 data
 - clean: passes boundary checks
 
-Executive dashboards filter to data_quality_flag = 'clean'.
-Borough-level aggregation masks individual station noise and
-provides more reliable recovery metrics.
+"Decoupled Reporting Grains: > - Station Map: Driven by int_station_recovery, filtered to data_quality_flag = 'clean' in Tableau to prevent misleading station bubbles.
+
+Borough KPIs: Driven by mart_recovery_scorecard, which performs an all-inclusive aggregation of every station (including suspect ones). This ensures 100% of ridership is accounted for at the borough level, as merged/split ID errors cancel out when summed."
 
 ## Station Counts Affected (2024)
 - Total stations: 428
@@ -71,6 +71,7 @@ Borough aggregation provides more reliable recovery metrics because:
 1. Individual station ID issues cancel out at aggregate level
 2. Borough is the meaningful unit for policy decisions
 3. The data quality story (23 suspect stations) is itself valuable signal
+4. Mathematical Completeness: Filtering 'suspect' stations at the borough level would artificially deflate total ridership. By including all IDs in the borough mart, the 'Top-Line' recovery percentage remains mathematically tied to total system throughput.
 
 ## Key Finding Preserved
 Despite the station ID limitation, the borough-level analysis reveals:
@@ -88,4 +89,8 @@ stations, shifted executive reporting to borough-level aggregation
 which is more reliable, and documented the full resolution path
 using GTFS crosswalk data. The 23 flagged stations are themselves
 an interesting finding — they represent stations where the physical
-infrastructure changed significantly between pre and post-COVID periods."
+infrastructure changed significantly between pre and post-COVID periods.
+I ultimately decoupled the reporting grains—using an inclusive borough 
+mart for total system accuracy and a filtered intermediate view for the 
+station map. This ensured the executive 'Top-Line' numbers were 100% 
+accurate while the granular map remained high-trust."

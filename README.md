@@ -184,7 +184,7 @@ All data is publicly available. No API keys required for MTA data.
 | ADR | Decision | Why It Matters |
 |-----|----------|---------------|
 | ADR 001 | Switched 2019 source from turnstile to hourly dataset | Eliminated station name mismatch — enabled direct join on station_complex_id |
-| ADR 002 | Flagged suspect station IDs, shifted to borough aggregation | MTA reorganized IDs 2019→2022; 23 stations produce misleading recovery metrics |
+| ADR 002 | Decoupled Recovery Reporting Grains | Solved "Station ID Mismatch" by using Silver-layer views for station maps (filtered for quality) and Gold-layer marts for borough totals (all-inclusive). Ensures 100% ridership accounting while preventing false recovery spikes. |
 | ADR 003 | Period-matched p95 capacity proxy | All-hour p95 produced 5x stress index; period-matching gives interpretable 0-1.2 scale |
 | ADR 004 | Hour spine via CROSS JOIN GENERATE_ARRAY | MTA data is sparse event data — missing hours absent not zeroed; spine enables anomaly detection |
 | ADR 005 | 800m catchment area with ST_UNION_AGG | Point-in-polygon misrepresents multi-entrance stations; area-weighted demographics match MTA equity methodology |
@@ -257,7 +257,8 @@ dbt test
 
 ```
 stg_mta_ridership ──────────────────────┐
-stg_mta_ridership_2019 ─────────────────┼──► int_station_recovery ──────────────────► mart_recovery_scorecard
+stg_mta_ridership_2019 ─────────────────┴──► int_station_recovery ──┬──► mart_recovery_scorecard (Borough Total)
+                                                       └─► Tableau Map (Station Detail)
                                         │                                              mart_efficiency_matrix
 stg_mta_ridership ──────────────────────┼──► int_station_congestion ─────────────────► mart_congestion_trigger
                                         │                                              mart_efficiency_matrix

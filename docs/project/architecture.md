@@ -82,13 +82,12 @@ graph TD
     end
 
     %% Gold Lineage
-    IntRecov -->|dbt| MartRecov
+    IntRecov -->|Sum Aggregation| MartRecov
     IntCong -->|dbt| MartCong
     IntCong -->|dbt| MartEff
     IntRecov -->|dbt| MartEff
     IntCensus -->|dbt| MartEquity
     IntUtil -->|dbt| MartEquity
-    MartRecov -->|dbt| MartEquity
 
     %% BI Node (Tableau)
     subgraph Tableau ["6. BUSINESS INTELLIGENCE (Tableau Public)"]
@@ -100,6 +99,7 @@ graph TD
     end
 
     %% Tableau Lineage
+    IntRecov -.->|Direct Query + Quality Filter| Dash1
     MartRecov -->|Direct Query| Dash1
     MartCong -->|Direct Query| Dash2
     MartEff -->|Direct Query| Dash3
