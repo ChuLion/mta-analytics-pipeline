@@ -223,30 +223,28 @@ stress comparison. All-hour p95 produces misleading results — see ADR 003.
 
 ### mart_recovery_scorecard
 Source: int_station_recovery
-Grain: station × year UNION borough × year
+Grain: borough × year
 Tableau View: View 1 — Recovery Scorecard
 
 | Column | Type | Description |
 |--------|------|-------------|
-| record_type | STRING | 'station' or 'borough' |
+| record_type | STRING | Always 'borough' |
 | transit_year | INT64 | Year (2022, 2023, 2024) |
 | borough | STRING | NYC borough |
-| station_complex_id | STRING | Station ID (NULL for borough rows) |
-| station_name | STRING | Station name or 'Borough Average' |
-| latitude | FLOAT64 | Station lat / borough centroid lat |
-| longitude | FLOAT64 | Station lon / borough centroid lon |
+| station_complex_id | STRING | Always NULL — retained for schema stability |
+| display_name | STRING | Borough label, e.g. 'Bronx Total System' |
 | annual_ridership | FLOAT64 | Total annual ridership |
 | annual_baseline_2019 | FLOAT64 | Total 2019 baseline ridership |
 | recovery_pct | FLOAT64 | annual_ridership / baseline × 100. Calculated as sum(monthly)/sum(baseline) — NOT avg of monthly percentages |
 | recovery_tier | STRING | Recovered (>=90%) / Recovering (70-89%) / Lagging (50-69%) / Critical (<50%) / N/A |
-| data_quality_flag | STRING | clean/suspect_merged/suspect_split/no_baseline. If ANY month is suspect, the whole year is flagged |
-| borough_avg_recovery_pct | FLOAT64 | Average recovery for the borough (window function over clean stations only) |
-| pct_vs_borough_avg | FLOAT64 | Station recovery minus borough average — positive = above average |
+| data_quality_flag | STRING | Always 'system_inclusive' — all stations included so borough sums reconcile to MTA published totals |
+| pct_vs_system_avg | FLOAT64 | Borough recovery minus system-wide recovery — positive = recovering faster than the system |
 | dbt_loaded_at | TIMESTAMP | dbt load timestamp |
 
 Notes:
-- Borough rows aggregate clean stations only (data_quality_flag = 'clean')
-- ~1,305 rows total (430 stations + 5 boroughs × 3 years)
+- Borough totals aggregate ALL stations, including suspect station-ID mappings
+- 15 rows total (5 boroughs × 3 years)
+- Station-level rows were removed in the ADR 002 decoupling refactor
 - See ADR 002 for station ID reorganization context
 
 ### mart_congestion_trigger

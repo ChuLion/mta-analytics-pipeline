@@ -1,6 +1,6 @@
 # MTA Analytics Pipeline
 
-**End-to-end ELT pipeline transforming 88 million rows of NYC subway data into executive analytics insights — built to demonstrate production-grade data engineering practices.**
+**End-to-end ELT pipeline transforming 98.7 million rows of NYC subway data into executive analytics insights — built to demonstrate production-grade data engineering practices.**
 
 [![dbt Tests](https://github.com/ChuLion/mta-analytics-pipeline/actions/workflows/dbt_test.yml/badge.svg)](https://github.com/ChuLion/mta-analytics-pipeline/actions/workflows/dbt_test.yml)
 ![BigQuery](https://img.shields.io/badge/BigQuery-4285F4?logo=google-cloud&logoColor=white)
@@ -56,7 +56,7 @@ See [Architecture Diagram](docs/project/architecture.md) for full data lineage.
 │              GOOGLE CLOUD STORAGE (Raw)                     │
 │  mta_ridership_historical/year=YYYY/month=MM/week=WW/       │
 │  mta_turnstile_2019_hourly/year=2019/qN/                    │
-│  88M+ rows partitioned CSV                                  │
+│  98.7M rows partitioned CSV                                 │
 └────────────────────────┬────────────────────────────────────┘
                          │ bq load
                          ▼
@@ -84,7 +84,7 @@ See [Architecture Diagram](docs/project/architecture.md) for full data lineage.
 ┌─────────────────────────────────────────────────────────────┐
 │               BIGQUERY GOLD (mta_gold)                      │
 │                                                             │
-│  mart_recovery_scorecard    ~1.3K rows                      │
+│  mart_recovery_scorecard    15 rows                         │
 │  mart_congestion_trigger    ~180K rows                      │
 │  mart_efficiency_matrix     ~180K rows                      │
 │  mart_equity_view           ~1.2K rows                      │
@@ -172,6 +172,7 @@ mta-analytics-pipeline/
 | MTA Hourly Ridership 2019 | [data.ny.gov](https://data.ny.gov/resource/t69i-h2me) | 20.98M | COVID baseline |
 | MTA Ridership 2025 | [data.ny.gov](https://data.ny.gov/resource/5wq4-mkjj) | 531K+ | Incremental (weekly) |
 | Census ACS 2023 | [Census Bureau API](https://api.census.gov) | 2,327 | NYC tract demographics |
+| **Total ridership rows** | | **98,745,385** | Bronze layer, verified via `__TABLES__` |
 
 All data is publicly available. No API keys required for MTA data.
 

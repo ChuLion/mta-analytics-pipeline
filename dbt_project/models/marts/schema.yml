@@ -3,21 +3,22 @@ version: 2
 models:
   - name: mart_recovery_scorecard
     description: >
-      Annual ridership recovery vs 2019 baseline per station and borough.
-      Grain: station × year UNION borough × year (~1,305 rows total).
-      record_type distinguishes station rows from borough summary rows.
-      Borough rows aggregate clean stations only.
+      Annual ridership recovery vs 2019 baseline, aggregated to borough level.
+      Grain: borough × year (15 rows — 5 boroughs × 3 years).
+      Station-level rows were removed in the ADR 002 decoupling refactor;
+      borough totals now aggregate ALL stations (system-inclusive) so that
+      borough sums reconcile to published MTA system totals.
       Math: sum(monthly_ridership) / sum(baseline_monthly_2019) — NOT avg of averages.
       See ADR 002 for station ID reorganization context.
       Tableau View: View 1 — Recovery Scorecard.
     columns:
       - name: record_type
-        description: "'station' or 'borough' — use to filter Tableau views"
+        description: "Always 'borough' — station-level rows removed in ADR 002 refactor"
         tests:
           - not_null
           - accepted_values:
               arguments:
-                values: ['station', 'borough']
+                values: ['borough']
       - name: transit_year
         description: "Year (2022, 2023, 2024)"
         tests:
@@ -43,20 +44,21 @@ models:
                 values: ['Recovered', 'Recovering', 'Lagging', 'Critical', 'N/A']
       - name: data_quality_flag
         description: >
-          clean / suspect_merged / suspect_split / no_baseline.
-          Filter to 'clean' for executive dashboards.
+          Always 'system_inclusive' — borough totals intentionally include
+          every station, including those with suspect station-ID mappings,
+          so borough sums reconcile to MTA published totals.
         tests:
           - not_null
-      - name: borough_avg_recovery_pct
-        description: "Average recovery_pct for the borough over clean stations only"
-      - name: pct_vs_borough_avg
-        description: "recovery_pct minus borough_avg_recovery_pct. Positive = above borough average."
+      - name: display_name
+        description: "Borough label for Tableau, e.g. 'Bronx Total System'"
+      - name: pct_vs_system_avg
+        description: "Borough recovery_pct minus the system-wide recovery_pct. Positive = recovering faster than the system."
 
   - name: mart_congestion_trigger
     description: >
       Station congestion patterns aggregated to time_period × day_of_week grain.
       Grain: station × time_period × day_of_week × ridership_year × season (~180K rows).
-      Reduces 13M daily rows to 180K for Tableau performance.
+      Reduces 11.4M daily rows to 180K for Tableau performance.
       Congestion intensity thresholds derived from actual data distribution.
       Tableau View: View 2 — Congestion Heat Map.
     columns:

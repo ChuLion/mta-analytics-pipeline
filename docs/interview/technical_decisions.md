@@ -1,7 +1,7 @@
 # MTA Analytics Pipeline — Interview Talking Points
 
 ## Project Elevator Pitch
-"I built an end-to-end ELT pipeline on GCP that ingests 88 million rows
+"I built an end-to-end ELT pipeline on GCP that ingests 98.7 million rows
 of MTA subway ridership data across 428 stations and 3 years. The pipeline
 uses Python for ingestion, dbt for transformation across bronze/silver/gold
 layers in BigQuery, and Tableau for executive dashboards. The analytical
@@ -19,7 +19,7 @@ first as CSV files, partitioned by year/month/week. From there Python loads
 it into BigQuery's bronze layer. dbt handles all transformations through
 three layers: staging views clean and standardize column names and types;
 intermediate views join datasets and calculate derived metrics; gold mart
-tables are pre-aggregated and Tableau-optimized — reducing 77 million source
+tables are pre-aggregated and Tableau-optimized — reducing 98.7 million source
 rows to under 200,000 rows per mart.
 
 I used Terraform for infrastructure as code, GitHub Actions for CI/CD running
@@ -138,13 +138,13 @@ silver and gold, is the standard pattern at companies using modern data stacks."
 
 ## Q7: How did you optimize for Tableau performance?
 
-"The source data is 77 million rows — Tableau can't render that directly.
+"The congestion model's source is the 77M-row 2022-2024 slice — Tableau can't render that directly.
 The solution is pre-aggregation in the gold mart layer:
 
-  int_station_congestion: 13M rows (daily grain)
+  int_station_congestion: 11.4M rows (daily grain)
   mart_congestion_trigger: 180K rows (station × time_period × dow × year × season)
 
-That's a 98.6% row reduction. Tableau queries scan 180K rows instead of 13M.
+That's a 98.4% row reduction. Tableau queries scan 180K rows instead of 11.4M.
 With BigQuery clustering on borough and time_period, query response is
 sub-second for filtered views.
 
@@ -224,7 +224,7 @@ production asset that needs to be maintainable by a team, not just a single pers
 
 | Metric | Value |
 |--------|-------|
-| Total rows ingested | 88+ million |
+| Total rows ingested | 98.7 million |
 | 2019 annual ridership | 1.701 billion |
 | Stations in dataset | 428 |
 | 2024 system recovery rate | ~70% of 2019 |
